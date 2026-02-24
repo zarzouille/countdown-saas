@@ -10,16 +10,24 @@ generator client {
 }
 
 model User {
-  id            Int          @id @default(autoincrement())
-  email         String       @unique
-  password      String
-  subscriptions  Subscription[]
+  id            Int       @id @default(autoincrement())
+  email         String?   @unique
+  password      String? // ✅ devient optionnel pour OAuth
+  name          String?
+  image         String?
+  emailVerified DateTime?
+
+  subscriptions Subscription[]
+
+  accounts   Account[]
+  sessions   Session[]
+  countdowns Countdown[]
 }
 
 model Subscription {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  id         Int         @id @default(autoincrement())
+  userId     Int
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   countdowns Countdown[]
 }
 
@@ -27,6 +35,49 @@ model Countdown {
   id             Int      @id @default(autoincrement())
   title          String
   targetDateTime DateTime
-  subscriptionId Int
-  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // (Optionnel) si tu veux garder un lien Subscription
+  subscriptionId Int?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+}
+
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
